@@ -1,7 +1,6 @@
 import { ParticleLife } from "./game/ParticleLife.js";
-import { RadixSortGPU } from "./lib/RadixSortGPU.js";
 import { simpleWebGPU } from "./simpleWebGPU.js";
-import { generateDistinctColors, printBufferData } from "./util.js";
+import { generateDistinctColors } from "./util.js";
 
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("renderTarget");
