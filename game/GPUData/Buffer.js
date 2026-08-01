@@ -10,7 +10,7 @@ export class GPUBuffer {
     const stride = simpleWebGPU.device.limits.minUniformBufferOffsetAlignment; // 通常 256
 
     this.camera = simpleWebGPU.createBuffer((2 + 2) * 4, ["U"]);
-    this.params = simpleWebGPU.createBuffer((1 + 1 + 1 + 1) * 4, ["U"]);
+    this.params = simpleWebGPU.createBuffer((1 + 1 + 1 + 1 + 1 + 1) * 4, ["U"]);
 
     // 読み取りと書き込みを切り替えながら使う
     this.particlePositionPing = simpleWebGPU.createBuffer(

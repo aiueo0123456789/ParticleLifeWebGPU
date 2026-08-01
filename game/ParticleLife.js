@@ -1,4 +1,5 @@
 import { simpleWebGPU } from "../simpleWebGPU.js";
+import { generateDistinctColors } from "../util.js";
 import { Camera } from "./Camera.js";
 import { DynamicSetting } from "./DynamicSetting.js";
 import { GPUData } from "./GPUData.js";
@@ -15,7 +16,56 @@ export class ParticleLife {
     this.counter = 0;
   }
 
-  restart() {}
+  init() {
+    simpleWebGPU.writeBuffer(
+      this.gpu.buffer.particleKind,
+      new Uint32Array(
+        Array.from({ length: this.staticSetting.maxParticles }, () =>
+          Math.floor(Math.random() * this.dynamicSetting.kinds),
+        ),
+      ),
+    );
+    simpleWebGPU.writeBuffer(
+      this.gpu.buffer.particlePositionPong,
+      new Float32Array(
+        Array.from(
+          { length: this.staticSetting.maxParticles * 2 },
+          () => Math.random() * 10000,
+        ),
+      ),
+    );
+    simpleWebGPU.writeBuffer(
+      this.gpu.buffer.particleKindColor,
+      new Float32Array(
+        generateDistinctColors(this.staticSetting.maxKinds).flat(),
+      ),
+    );
+    simpleWebGPU.writeBuffer(
+      this.gpu.buffer.particleRule,
+      /**
+       *   0 1 2
+       * 0
+       * 1
+       * 2
+       */
+      new Float32Array(
+        Array.from({
+          length: this.staticSetting.maxKinds * this.staticSetting.maxKinds,
+        }).map(() => (Math.random() * 2 - 1) * 20),
+      ),
+    );
+  }
+
+  restart() {
+    simpleWebGPU.writeBuffer(
+      this.gpu.buffer.particleKind,
+      new Uint32Array(
+        Array.from({ length: this.staticSetting.maxParticles }, () =>
+          Math.floor(Math.random() * this.dynamicSetting.kinds),
+        ),
+      ),
+    );
+  }
 
   update(canvas, canvasContext) {
     const stride = simpleWebGPU.device.limits.minUniformBufferOffsetAlignment; // 通常 256
@@ -32,8 +82,10 @@ export class ParticleLife {
           this.staticSetting.maxKinds,
           this.staticSetting.maxChunks,
           50.0,
+          this.dynamicSetting.maxRadius,
+          this.dynamicSetting.minRadiusRate,
         ],
-        ["u32", "u32", "u32", "f32"],
+        ["u32", "u32", "u32", "f32", "f32", "f32"],
       ),
     );
 

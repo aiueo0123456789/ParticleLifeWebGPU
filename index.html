@@ -9,8 +9,35 @@
 </head>
 
 <body>
-  <div id="fps">FPS: --</div>
   <canvas id="renderTarget"></canvas>
+
+  <div id="tab">
+    <div class="ticks">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="label"><span class="arrow">◂</span>設定</div>
+    <div class="readout" id="tabReadout">N <b>0</b></div>
+  </div>
+
+  <div id="panel">
+    <div class="title">PARTICLE LIFE</div>
+    <div class="subtitle">control console</div>
+
+    <div id="setting">
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="btnrow">
+      <button id="btn-matrix">⟳ 行列をランダム化</button>
+      <button id="btn-reset">⤾ 配置をリセット</button>
+      <button id="btn-pause">‖ 一時停止</button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="stats">
+      FPS <b id="fps">0</b><br>
+    </div>
+  </div>
   <script src="main.js" type="module"></script>
 </body>
 

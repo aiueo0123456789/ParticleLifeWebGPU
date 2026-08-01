@@ -115,6 +115,8 @@ struct Params {
   maxKindsCount: u32,
   chunkCount: u32,
   chunkSize: f32,
+  maxRadius: f32,
+  minRadiusRate: f32,
 };
 
 struct Uniforms {
@@ -154,6 +156,8 @@ struct Params {
   maxKindsCount: u32,
   chunkCount: u32,
   chunkSize: f32,
+  maxRadius: f32,
+  minRadiusRate: f32,
 };
 
 struct Uniforms {
@@ -214,6 +218,8 @@ struct Params {
   maxKindsCount: u32,
   chunkCount: u32,
   chunkSize: f32,
+  maxRadius: f32,
+  minRadiusRate: f32,
 };
 
 struct Offset {
@@ -261,6 +267,8 @@ struct Params {
   maxKindsCount: u32,
   chunkCount: u32,
   chunkSize: f32,
+  maxRadius: f32,
+  minRadiusRate: f32,
 };
 
 struct Uniforms {
@@ -308,6 +316,8 @@ struct Params {
   maxKindsCount: u32,
   chunkCount: u32,
   chunkSize: f32,
+  maxRadius: f32,
+  minRadiusRate: f32,
 };
 
 struct Offset {
@@ -324,8 +334,7 @@ struct Offset {
 @group(0) @binding(6) var<storage, read> offsets: array<Offset>;
 @group(1) @binding(0) var<uniform> params: Params;
 
-const dt = 1.0 / 30.0;
-const maxRadius = 100.0;
+const dt = 1.0 / 60.0;
 const bounce = 5.0;
 
 fn posToHash(pos: vec2<f32>) -> u32 {
@@ -333,15 +342,14 @@ fn posToHash(pos: vec2<f32>) -> u32 {
   return (normalizedPos.x * 61u + normalizedPos.y * 97u) % params.chunkCount;
 }
 
-const beta = 0.3;
 fn f(r: f32, a: f32) -> f32 {
   return select(
     select(0.0,
-      a * (1.0 - abs(2.0 * r - 1.0 - beta) / (1.0 - beta)),
-      beta < r && r < 1.0
+      a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate)),
+      params.minRadiusRate < r && r < 1.0
     ),
-    (r / beta - 1) * bounce,
-    r < beta
+    (r / params.minRadiusRate - 1) * bounce,
+    r < params.minRadiusRate
   );
 }
 
@@ -350,10 +358,10 @@ fn update(particleIndexA: u32, particleIndexB: u32) -> vec2<f32> {
     return vec2<f32>(0.0);
   }
   let sub = positionRead[particleIndexB] - positionRead[particleIndexA];
-  if (abs(sub.x) < maxRadius && abs(sub.y) < maxRadius) {
+  if (abs(sub.x) < params.maxRadius && abs(sub.y) < params.maxRadius) {
     let dist = max(length(sub), 0.001);
     let dir = sub / dist;
-    return dir * f(dist / maxRadius, rule[kind[particleIndexA] * params.maxKindsCount + kind[particleIndexB]]) * dt;
+    return dir * f(dist / params.maxRadius, rule[kind[particleIndexA] * params.maxKindsCount + kind[particleIndexB]]) * dt;
   } else {
     return vec2<f32>(0.0);
   }
@@ -367,7 +375,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
     return ;
   }
   var sumForce = vec2<f32>(0.0);
-  let chunkRange = ceil(maxRadius / params.chunkSize);
+  let chunkRange = ceil(params.maxRadius / params.chunkSize);
 
   for (var dy: f32 = -chunkRange; dy <= chunkRange; dy += 1.0) {
     for (var dx: f32 = -chunkRange; dx <= chunkRange; dx += 1.0) {
@@ -404,6 +412,8 @@ struct Params {
   maxKindsCount: u32,
   chunkCount: u32,
   chunkSize: f32,
+  maxRadius: f32,
+  minRadiusRate: f32,
 };
 
 @group(0) @binding(0) var<storage, read_write> chunckIndices: array<u32>;

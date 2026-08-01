@@ -4,8 +4,8 @@ import { generateDistinctColors } from "./util.js";
 
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("renderTarget");
-canvas.width = canvas.offsetWidth * 2;
-canvas.height = canvas.offsetHeight * 2;
+canvas.width = canvas.offsetWidth * 1;
+canvas.height = canvas.offsetHeight * 1;
 const canvasContext = canvas.getContext("webgpu");
 canvasContext.configure({
   device: simpleWebGPU.device,
@@ -17,6 +17,7 @@ let lastTime = performance.now();
 let frames = 0;
 function update() {
   game.update(canvas, canvasContext);
+
   frames++;
   const time = performance.now();
   const diff = time - lastTime;
@@ -24,7 +25,7 @@ function update() {
   // 1秒経過したかチェック
   if (diff >= 1000) {
     const fps = Math.round((frames * 1000) / diff);
-    document.getElementById("fps").textContent = `FPS: ${fps}`;
+    document.getElementById("fps").textContent = `${fps}`;
     frames = 0;
     lastTime = time;
   }
@@ -32,43 +33,6 @@ function update() {
 }
 
 const camera = game.camera;
-
-simpleWebGPU.writeBuffer(
-  game.gpu.buffer.particleKind,
-  new Uint32Array(
-    Array.from({ length: game.dynamicSetting.particles }, () =>
-      Math.floor(Math.random() * game.dynamicSetting.kinds),
-    ),
-  ),
-);
-simpleWebGPU.writeBuffer(
-  game.gpu.buffer.particlePositionPong,
-  new Float32Array(
-    Array.from(
-      { length: game.dynamicSetting.particles * 2 },
-      () => Math.random() * 10000,
-    ),
-  ),
-);
-simpleWebGPU.writeBuffer(
-  game.gpu.buffer.particleKindColor,
-  new Float32Array(generateDistinctColors(game.dynamicSetting.kinds).flat()),
-);
-simpleWebGPU.writeBuffer(
-  game.gpu.buffer.particleRule,
-  /**
-   *   0 1 2
-   * 0
-   * 1
-   * 2
-   */
-  new Float32Array(
-    Array.from({
-      length: game.staticSetting.maxKinds * game.staticSetting.maxKinds,
-    }).map(() => (Math.random() * 2 - 1) * 10),
-  ),
-);
-update();
 
 document.addEventListener("wheel", (e) => {
   camera.zoom += e.deltaY / 100;
@@ -88,3 +52,108 @@ document.addEventListener("mousemove", (e) => {
     camera.position[1] += e.movementY / camera.zoom;
   }
 });
+
+const sliders = ["count", "kinds", "radius", "size"];
+const structs = {
+  count: {
+    text: "パーティクル数",
+    min: 10 ** 3,
+    max: game.staticSetting.maxParticles,
+    value: game.dynamicSetting.particles,
+  },
+  kinds: {
+    text: "パーティクル種類",
+    min: 1,
+    max: game.staticSetting.maxKinds,
+    value: game.dynamicSetting.kinds,
+  },
+  radius: {
+    text: "最大作用半径",
+    min: 10,
+    max: 200,
+    value: game.dynamicSetting.maxRadius,
+  },
+  size: { text: "大きさ", min: 10, max: 100, value: 80 },
+};
+const fmts = {
+  count: (v) => Math.round(v),
+  kinds: (v) => Math.round(v),
+  radius: (v) => Math.round(v),
+  size: (v) => (+v).toFixed(1),
+};
+
+const inputs = {
+  count: (v) => {
+    game.dynamicSetting.particles = Number(v);
+  },
+  kinds: (v) => {
+    game.dynamicSetting.kinds = Number(v);
+    game.restart();
+  },
+  radius: (v) => {
+    game.dynamicSetting.maxRadius = Number(v);
+  },
+  size: (v) => (+v).toFixed(1),
+};
+
+function setPct(el) {
+  const min = Number(el.min),
+    max = Number(el.max),
+    v = Number(el.value);
+  el.style.setProperty("--pct", ((v - min) / (max - min)) * 100 + "%");
+}
+
+const panel = document.getElementById("panel");
+const setting = document.getElementById("setting");
+
+sliders.forEach((k) => {
+  // <div class="row">
+  //   <div class="lh"><label>粒子数</label>
+  //     <span class="val" id="v-count"></span>
+  //   </div>
+  //   <input type="range" id="s-count" min="10000" max="316228" step="50">
+  // </div>
+  const row = document.createElement("div");
+  row.classList.add("row");
+  const lh = document.createElement("div");
+  lh.classList.add("lh");
+  const label = document.createElement("label");
+  label.textContent = structs[k].text;
+  const span = document.createElement("span");
+  lh.append(label, span);
+  const input = document.createElement("input");
+  input.type = "range";
+  input.min = structs[k].min;
+  input.max = structs[k].max;
+  input.value = structs[k].value;
+  row.append(lh, input);
+
+  setting.append(row);
+
+  const upd = () => {
+    span.textContent = fmts[k](input.value);
+    setPct(input);
+    inputs[k](input.value);
+  };
+  input.addEventListener("input", upd);
+  upd();
+});
+
+const tab = document.getElementById("tab");
+document.body.classList.add("open");
+tab.addEventListener("click", () => {
+  document.body.classList.toggle("open");
+});
+
+panel.addEventListener("mousemove", (e) => {
+  e.stopPropagation();
+});
+panel.addEventListener("mousedown", (e) => {
+  e.stopPropagation();
+});
+panel.addEventListener("mouseup", (e) => {
+  e.stopPropagation();
+});
+
+game.init();
+update();
