@@ -359,7 +359,7 @@ fn update(particleIndexA: u32, particleIndexB: u32) -> vec2<f32> {
   }
   let sub = positionRead[particleIndexB] - positionRead[particleIndexA];
   if (abs(sub.x) < params.maxRadius && abs(sub.y) < params.maxRadius) {
-    let dist = max(length(sub), 0.001);
+    let dist = max(length(sub), 0.0001);
     let dir = sub / dist;
     return dir * f(dist / params.maxRadius, rule[kind[particleIndexA] * params.maxKindsCount + kind[particleIndexB]]) * dt;
   } else {

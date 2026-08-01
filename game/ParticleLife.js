@@ -99,6 +99,11 @@ export class ParticleLife {
     );
 
     const encoder = simpleWebGPU.device.createCommandEncoder();
+    encoder.clearBuffer(
+      this.gpu.buffer.chunkOffset,
+      0,
+      this.gpu.buffer.chunkOffset.size,
+    );
     const computePass = encoder.beginComputePass();
     computePass.setBindGroup(1, this.gpu.group.params);
 

@@ -18,6 +18,22 @@ let frames = 0;
 function update() {
   game.update(canvas, canvasContext);
 
+  // simpleWebGPU.printBufferData(
+  //   game.gpu.buffer.particleChunkIndex,
+  //   ["u32"],
+  //   "particleChunkIndex",
+  // );
+  // simpleWebGPU.printBufferData(
+  //   game.gpu.buffer.chunkOffset,
+  //   ["u32"],
+  //   "chunkOffset",
+  // );
+  // simpleWebGPU.printBufferData(
+  //   game.gpu.buffer.particleIndexOderByChunck,
+  //   ["u32"],
+  //   "particleIndexOderByChunck",
+  // );
+
   frames++;
   const time = performance.now();
   const diff = time - lastTime;
