@@ -104,6 +104,7 @@ export class ParticleLife {
       0,
       this.gpu.buffer.chunkOffset.size,
     );
+
     const computePass = encoder.beginComputePass();
     computePass.setBindGroup(1, this.gpu.group.params);
 

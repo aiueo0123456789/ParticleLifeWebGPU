@@ -86,13 +86,13 @@ fn fmain(input: FInput) -> FOutput {
             format: simpleWebGPU.preferredCanvasFormat,
             blend: {
               color: {
-                srcFactor: "src-alpha", // ソースのアルファ値
-                dstFactor: "one-minus-src-alpha", // 1 - ソースのアルファ値
-                operation: "add", // 加算
+                srcFactor: "src-alpha",
+                dstFactor: "one",
+                operation: "add",
               },
               alpha: {
-                srcFactor: "src-alpha",
-                dstFactor: "one-minus-src-alpha",
+                srcFactor: "one",
+                dstFactor: "one",
                 operation: "add",
               },
             },
@@ -100,6 +100,17 @@ fn fmain(input: FInput) -> FOutput {
         ],
       },
     });
+
+    const paramsStruct = /* wgsl */ `
+struct Params {
+  particleCount: u32,
+  maxKindsCount: u32,
+  chunkCount: u32,
+  chunkSize: f32,
+  maxRadius: f32,
+  minRadiusRate: f32,
+};
+    `;
 
     // ビット反転
     this.radixSort_InvertBit = simpleWebGPU.device.createComputePipeline({
@@ -110,14 +121,7 @@ fn fmain(input: FInput) -> FOutput {
         module: simpleWebGPU.device.createShaderModule({
           label: "radixSortA",
           code: /* wgsl */ `
-struct Params {
-  particleCount: u32,
-  maxKindsCount: u32,
-  chunkCount: u32,
-  chunkSize: f32,
-  maxRadius: f32,
-  minRadiusRate: f32,
-};
+${paramsStruct}
 
 struct Uniforms {
   bitIndex: u32,
@@ -151,14 +155,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         module: simpleWebGPU.device.createShaderModule({
           label: "radixSortB",
           code: /* wgsl */ `
-struct Params {
-  particleCount: u32,
-  maxKindsCount: u32,
-  chunkCount: u32,
-  chunkSize: f32,
-  maxRadius: f32,
-  minRadiusRate: f32,
-};
+${paramsStruct}
 
 struct Uniforms {
   bitIndex: u32,
@@ -213,14 +210,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
         module: simpleWebGPU.device.createShaderModule({
           label: "makeOffset",
           code: /* wgsl */ `
-struct Params {
-  particleCount: u32,
-  maxKindsCount: u32,
-  chunkCount: u32,
-  chunkSize: f32,
-  maxRadius: f32,
-  minRadiusRate: f32,
-};
+${paramsStruct}
 
 struct Offset {
   start: u32,
@@ -262,14 +252,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
         module: simpleWebGPU.device.createShaderModule({
           label: "scanPipeline",
           code: /* wgsl */ `
-struct Params {
-  particleCount: u32,
-  maxKindsCount: u32,
-  chunkCount: u32,
-  chunkSize: f32,
-  maxRadius: f32,
-  minRadiusRate: f32,
-};
+${paramsStruct}
 
 struct Uniforms {
   step: u32,
@@ -303,6 +286,105 @@ fn main(input: CInput) {
       },
     });
 
+    //     this.update = simpleWebGPU.device.createComputePipeline({
+    //       layout: simpleWebGPU.device.createPipelineLayout({
+    //         bindGroupLayouts: [groupLayout.update, groupLayout.params],
+    //       }),
+    //       compute: {
+    //         module: simpleWebGPU.device.createShaderModule({
+    //           label: "update",
+    //           code: /* wgsl */ `
+    // ${paramsStruct}
+
+    // struct Offset {
+    //   start: u32,
+    //   end: u32,
+    // }
+
+    // @group(0) @binding(0) var<storage, read_write> positionWrite: array<vec2<f32>>;
+    // @group(0) @binding(1) var<storage, read> positionRead: array<vec2<f32>>;
+    // @group(0) @binding(2) var<storage, read_write> velocity: array<vec2<f32>>;
+    // @group(0) @binding(3) var<storage, read> kind: array<u32>;
+    // @group(0) @binding(4) var<storage, read> rule: array<f32>;
+    // @group(0) @binding(5) var<storage, read> particleIndices: array<u32>;
+    // @group(0) @binding(6) var<storage, read> offsets: array<Offset>;
+    // @group(1) @binding(0) var<uniform> params: Params;
+
+    // const dt = 1.0 / 60.0;
+    // const bounce = 5.0;
+
+    // fn hashChunk(nx: u32, ny: u32) -> u32 {
+    //   return (nx * 61u + ny * 97u) % params.chunkCount;
+    // }
+
+    // fn f(r: f32, a: f32) -> f32 {
+    //   return select(
+    //     select(0.0,
+    //       a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate)),
+    //       params.minRadiusRate < r && r < 1.0
+    //     ),
+    //     (r / params.minRadiusRate - 1) * bounce,
+    //     r < params.minRadiusRate
+    //   );
+    // }
+
+    // // posA/kindAを引数で受け取り、storageの再読み込みをなくす
+    // fn update(posA: vec2<f32>, kindA: u32, particleIndexB: u32) -> vec2<f32> {
+    //   let sub = positionRead[particleIndexB] - posA;
+    //   let d2 = dot(sub, sub);
+    //   let r2max = params.maxRadius * params.maxRadius;
+    //   if (d2 < r2max && d2 > 0.0) {
+    //     let dist = sqrt(d2);
+    //     let dir = sub / dist;
+    //     return dir * f(dist / params.maxRadius, rule[kindA * params.maxKindsCount + kind[particleIndexB]]) * dt;
+    //   }
+    //   return vec2<f32>(0.0);
+    // }
+
+    // @compute @workgroup_size(64)
+    // fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
+    //   let particleIndex = globalId.x;
+    //   if (params.particleCount <= particleIndex) {
+    //     return;
+    //   }
+
+    //   // ここで一度だけ読む(前は内側ループの回数ぶん毎回storageアクセスしていた)
+    //   let posA = positionRead[particleIndex];
+    //   let kindA = kind[particleIndex];
+
+    //   var sumForce = vec2<f32>(0.0);
+    //   let chunkRange = i32(ceil(params.maxRadius / params.chunkSize));
+
+    //   // 自分のチャンク座標も一度だけ計算(floatの割り算を1回に削減)
+    //   let baseX = i32(posA.x / params.chunkSize);
+    //   let baseY = i32(posA.y / params.chunkSize);
+
+    //   for (var dy: i32 = -chunkRange; dy <= chunkRange; dy++) {
+    //     for (var dx: i32 = -chunkRange; dx <= chunkRange; dx++) {
+    //       // vec2の加算+再除算ではなく整数の加算だけで隣接チャンクを求める
+    //       let nx = u32(baseX + dx);
+    //       let ny = u32(baseY + dy);
+    //       let chunkIndex = hashChunk(nx, ny);
+    //       let start = offsets[chunkIndex].start;
+    //       let end = offsets[chunkIndex].end;
+    //       for (var i = start; i < end; i = i + 1u) {
+    //         let particleIndexB = particleIndices[i];
+    //         if (particleIndexB != particleIndex) {
+    //           sumForce += update(posA, kindA, particleIndexB);
+    //         }
+    //       }
+    //     }
+    //   }
+
+    //   velocity[particleIndex] = (velocity[particleIndex] + sumForce) * 0.95;
+    //   positionWrite[particleIndex] = posA + velocity[particleIndex] * dt;
+    // }
+    //           `,
+    //         }),
+    //         entryPoint: "main",
+    //       },
+    //     });
+
     this.update = simpleWebGPU.device.createComputePipeline({
       layout: simpleWebGPU.device.createPipelineLayout({
         bindGroupLayouts: [groupLayout.update, groupLayout.params],
@@ -311,14 +393,7 @@ fn main(input: CInput) {
         module: simpleWebGPU.device.createShaderModule({
           label: "update",
           code: /* wgsl */ `
-struct Params {
-  particleCount: u32,
-  maxKindsCount: u32,
-  chunkCount: u32,
-  chunkSize: f32,
-  maxRadius: f32,
-  minRadiusRate: f32,
-};
+${paramsStruct}
 
 struct Offset {
   start: u32,
@@ -343,6 +418,13 @@ fn posToHash(pos: vec2<f32>) -> u32 {
 }
 
 fn f(r: f32, a: f32) -> f32 {
+  // if (r < params.minRadiusRate) {
+  //   return (r / params.minRadiusRate - 1) * bounce;
+  // } else if (1.0 < r) {
+  //   return a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate));
+  // } else {
+  //   return 0.0;
+  // }
   return select(
     select(0.0,
       a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate)),
@@ -353,15 +435,12 @@ fn f(r: f32, a: f32) -> f32 {
   );
 }
 
-fn update(particleIndexA: u32, particleIndexB: u32) -> vec2<f32> {
-  if (particleIndexA == particleIndexB) {
-    return vec2<f32>(0.0);
-  }
-  let sub = positionRead[particleIndexB] - positionRead[particleIndexA];
+fn update(posA: vec2<f32>, kindA: u32, particleIndexB: u32) -> vec2<f32> {
+  let sub = positionRead[particleIndexB] - posA;
   if (abs(sub.x) < params.maxRadius && abs(sub.y) < params.maxRadius) {
     let dist = max(length(sub), 0.0001);
     let dir = sub / dist;
-    return dir * f(dist / params.maxRadius, rule[kind[particleIndexA] * params.maxKindsCount + kind[particleIndexB]]) * dt;
+    return dir * f(dist / params.maxRadius, rule[kindA * params.maxKindsCount + kind[particleIndexB]]) * dt;
   } else {
     return vec2<f32>(0.0);
   }
@@ -377,21 +456,27 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
   var sumForce = vec2<f32>(0.0);
   let chunkRange = ceil(params.maxRadius / params.chunkSize);
 
+  let posA = positionRead[particleIndex];
+  let kindA = kind[particleIndex];
+
   for (var dy: f32 = -chunkRange; dy <= chunkRange; dy += 1.0) {
     for (var dx: f32 = -chunkRange; dx <= chunkRange; dx += 1.0) {
-      let chunkIndex = posToHash(positionRead[particleIndex] + vec2<f32>(dx,dy) * params.chunkSize);
+      let chunkIndex = posToHash(posA + vec2<f32>(dx,dy) * params.chunkSize);
       for (
         var i = offsets[chunkIndex].start;
         i < offsets[chunkIndex].end;
         i = i + 1u
       ) {
-        sumForce += update(particleIndex, particleIndices[i]);
+        let indexB = particleIndices[i];
+        if (particleIndex != indexB) {
+          sumForce += update(posA, kindA, indexB);
+        }
       }
     }
   }
   velocity[particleIndex] += sumForce;
   velocity[particleIndex] *= 0.95;
-  positionWrite[particleIndex] = positionRead[particleIndex] + velocity[particleIndex] * dt;
+  positionWrite[particleIndex] = posA + velocity[particleIndex] * dt;
 }
           `,
         }),
@@ -407,14 +492,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
         module: simpleWebGPU.device.createShaderModule({
           label: "chunk",
           code: /* wgsl */ `
-struct Params {
-  particleCount: u32,
-  maxKindsCount: u32,
-  chunkCount: u32,
-  chunkSize: f32,
-  maxRadius: f32,
-  minRadiusRate: f32,
-};
+${paramsStruct}
 
 @group(0) @binding(0) var<storage, read_write> chunckIndices: array<u32>;
 @group(0) @binding(1) var<storage, read_write> particleIndices: array<u32>;

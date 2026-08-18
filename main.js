@@ -69,33 +69,42 @@ document.addEventListener("mousemove", (e) => {
   }
 });
 
-const sliders = ["count", "kinds", "radius", "size"];
+const sliders = ["count", "kinds", "radius", "minRadiusRate"];
 const structs = {
   count: {
     text: "パーティクル数",
     min: 10 ** 3,
     max: game.staticSetting.maxParticles,
     value: game.dynamicSetting.particles,
+    step: 1,
   },
   kinds: {
     text: "パーティクル種類",
     min: 1,
     max: game.staticSetting.maxKinds,
     value: game.dynamicSetting.kinds,
+    step: 1,
   },
   radius: {
     text: "最大作用半径",
     min: 10,
     max: 200,
     value: game.dynamicSetting.maxRadius,
+    step: 0.1,
   },
-  size: { text: "大きさ", min: 10, max: 100, value: 80 },
+  minRadiusRate: {
+    text: "最小範囲割合",
+    min: 0,
+    max: 1,
+    value: game.dynamicSetting.minRadiusRate,
+    step: 0.001,
+  },
 };
 const fmts = {
   count: (v) => Math.round(v),
   kinds: (v) => Math.round(v),
   radius: (v) => Math.round(v),
-  size: (v) => (+v).toFixed(1),
+  minRadiusRate: (v) => v,
 };
 
 const inputs = {
@@ -109,7 +118,9 @@ const inputs = {
   radius: (v) => {
     game.dynamicSetting.maxRadius = Number(v);
   },
-  size: (v) => (+v).toFixed(1),
+  minRadiusRate: (v) => {
+    game.dynamicSetting.minRadiusRate = Number(v);
+  },
 };
 
 function setPct(el) {
@@ -142,6 +153,7 @@ sliders.forEach((k) => {
   input.min = structs[k].min;
   input.max = structs[k].max;
   input.value = structs[k].value;
+  input.step = structs[k].step;
   row.append(lh, input);
 
   setting.append(row);
