@@ -94,7 +94,7 @@ const structs = {
   },
   minRadiusRate: {
     text: "最小範囲割合",
-    min: 0,
+    min: 0.3,
     max: 1,
     value: game.dynamicSetting.minRadiusRate,
     step: 0.001,
