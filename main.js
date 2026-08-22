@@ -94,7 +94,7 @@ const structs = {
   },
   minRadiusRate: {
     text: "最小範囲割合",
-    min: 0.3,
+    min: 0,
     max: 1,
     value: game.dynamicSetting.minRadiusRate,
     step: 0.001,
@@ -119,6 +119,7 @@ const inputs = {
     game.dynamicSetting.maxRadius = Number(v);
   },
   minRadiusRate: (v) => {
+    console.log();
     game.dynamicSetting.minRadiusRate = Number(v);
   },
 };
@@ -152,8 +153,8 @@ sliders.forEach((k) => {
   input.type = "range";
   input.min = structs[k].min;
   input.max = structs[k].max;
-  input.value = structs[k].value;
   input.step = structs[k].step;
+  input.value = structs[k].value;
   row.append(lh, input);
 
   setting.append(row);
@@ -175,7 +176,7 @@ tab.addEventListener("click", () => {
 
 document.getElementById("btn-matrix").addEventListener("click", () => {
   game.resetRurle();
-})
+});
 
 panel.addEventListener("mousemove", (e) => {
   e.stopPropagation();
