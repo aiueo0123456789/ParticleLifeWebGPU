@@ -56,7 +56,24 @@ export class ParticleLife {
     );
   }
 
-  restart() {
+  resetRurle() {
+    simpleWebGPU.writeBuffer(
+      this.gpu.buffer.particleRule,
+      /**
+       *   0 1 2
+       * 0
+       * 1
+       * 2
+       */
+      new Float32Array(
+        Array.from({
+          length: this.staticSetting.maxKinds * this.staticSetting.maxKinds,
+        }).map(() => (Math.random() * 2 - 1) * 20),
+      ),
+    );
+  }
+
+  resetKind() {
     simpleWebGPU.writeBuffer(
       this.gpu.buffer.particleKind,
       new Uint32Array(

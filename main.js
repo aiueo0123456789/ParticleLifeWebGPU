@@ -113,7 +113,7 @@ const inputs = {
   },
   kinds: (v) => {
     game.dynamicSetting.kinds = Number(v);
-    game.restart();
+    game.resetKind();
   },
   radius: (v) => {
     game.dynamicSetting.maxRadius = Number(v);
@@ -172,6 +172,10 @@ document.body.classList.add("open");
 tab.addEventListener("click", () => {
   document.body.classList.toggle("open");
 });
+
+document.getElementById("btn-matrix").addEventListener("click", () => {
+  game.resetRurle();
+})
 
 panel.addEventListener("mousemove", (e) => {
   e.stopPropagation();
