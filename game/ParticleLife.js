@@ -98,7 +98,8 @@ export class ParticleLife {
           this.dynamicSetting.particles,
           this.staticSetting.maxKinds,
           this.staticSetting.maxChunks,
-          50.0,
+          this.dynamicSetting.maxRadius * 2, // チャンクサイズ
+          // 50, // チャンクサイズ
           this.dynamicSetting.maxRadius,
           this.dynamicSetting.minRadiusRate,
         ],
