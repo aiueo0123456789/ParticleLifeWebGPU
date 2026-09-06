@@ -112,6 +112,30 @@ struct Params {
 };
     `;
 
+    const posToHash = /* wgsl */ `
+fn chunkCoord(pos: vec2<f32>) -> vec2<i32> {
+  return vec2<i32>(
+    i32(floor(pos.x / params.chunkSize)),
+    i32(floor(pos.y / params.chunkSize))
+  );
+}
+
+fn posToHash(pos: vec2<f32>) -> u32 {
+  let p = chunkCoord(pos);
+
+  var h = u32(p.x) * 0x9E3779B9u;
+  h ^= u32(p.y) * 0x85EBCA6Bu;
+
+  h ^= h >> 16u;
+  h *= 0x85EBCA6Bu;
+  h ^= h >> 13u;
+  h *= 0xC2B2AE35u;
+  h ^= h >> 16u;
+
+  return h % params.chunkCount;
+}
+    `;
+
     // ビット反転
     this.radixSort_InvertBit = simpleWebGPU.device.createComputePipeline({
       layout: simpleWebGPU.device.createPipelineLayout({
@@ -286,105 +310,6 @@ fn main(input: CInput) {
       },
     });
 
-    //     this.update = simpleWebGPU.device.createComputePipeline({
-    //       layout: simpleWebGPU.device.createPipelineLayout({
-    //         bindGroupLayouts: [groupLayout.update, groupLayout.params],
-    //       }),
-    //       compute: {
-    //         module: simpleWebGPU.device.createShaderModule({
-    //           label: "update",
-    //           code: /* wgsl */ `
-    // ${paramsStruct}
-
-    // struct Offset {
-    //   start: u32,
-    //   end: u32,
-    // }
-
-    // @group(0) @binding(0) var<storage, read_write> positionWrite: array<vec2<f32>>;
-    // @group(0) @binding(1) var<storage, read> positionRead: array<vec2<f32>>;
-    // @group(0) @binding(2) var<storage, read_write> velocity: array<vec2<f32>>;
-    // @group(0) @binding(3) var<storage, read> kind: array<u32>;
-    // @group(0) @binding(4) var<storage, read> rule: array<f32>;
-    // @group(0) @binding(5) var<storage, read> particleIndices: array<u32>;
-    // @group(0) @binding(6) var<storage, read> offsets: array<Offset>;
-    // @group(1) @binding(0) var<uniform> params: Params;
-
-    // const dt = 1.0 / 60.0;
-    // const bounce = 5.0;
-
-    // fn hashChunk(nx: u32, ny: u32) -> u32 {
-    //   return (nx * 61u + ny * 97u) % params.chunkCount;
-    // }
-
-    // fn f(r: f32, a: f32) -> f32 {
-    //   return select(
-    //     select(0.0,
-    //       a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate)),
-    //       params.minRadiusRate < r && r < 1.0
-    //     ),
-    //     (r / params.minRadiusRate - 1) * bounce,
-    //     r < params.minRadiusRate
-    //   );
-    // }
-
-    // // posA/kindAを引数で受け取り、storageの再読み込みをなくす
-    // fn update(posA: vec2<f32>, kindA: u32, particleIndexB: u32) -> vec2<f32> {
-    //   let sub = positionRead[particleIndexB] - posA;
-    //   let d2 = dot(sub, sub);
-    //   let r2max = params.maxRadius * params.maxRadius;
-    //   if (d2 < r2max && d2 > 0.0) {
-    //     let dist = sqrt(d2);
-    //     let dir = sub / dist;
-    //     return dir * f(dist / params.maxRadius, rule[kindA * params.maxKindsCount + kind[particleIndexB]]) * dt;
-    //   }
-    //   return vec2<f32>(0.0);
-    // }
-
-    // @compute @workgroup_size(64)
-    // fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
-    //   let particleIndex = globalId.x;
-    //   if (params.particleCount <= particleIndex) {
-    //     return;
-    //   }
-
-    //   // ここで一度だけ読む(前は内側ループの回数ぶん毎回storageアクセスしていた)
-    //   let posA = positionRead[particleIndex];
-    //   let kindA = kind[particleIndex];
-
-    //   var sumForce = vec2<f32>(0.0);
-    //   let chunkRange = i32(ceil(params.maxRadius / params.chunkSize));
-
-    //   // 自分のチャンク座標も一度だけ計算(floatの割り算を1回に削減)
-    //   let baseX = i32(posA.x / params.chunkSize);
-    //   let baseY = i32(posA.y / params.chunkSize);
-
-    //   for (var dy: i32 = -chunkRange; dy <= chunkRange; dy++) {
-    //     for (var dx: i32 = -chunkRange; dx <= chunkRange; dx++) {
-    //       // vec2の加算+再除算ではなく整数の加算だけで隣接チャンクを求める
-    //       let nx = u32(baseX + dx);
-    //       let ny = u32(baseY + dy);
-    //       let chunkIndex = hashChunk(nx, ny);
-    //       let start = offsets[chunkIndex].start;
-    //       let end = offsets[chunkIndex].end;
-    //       for (var i = start; i < end; i = i + 1u) {
-    //         let particleIndexB = particleIndices[i];
-    //         if (particleIndexB != particleIndex) {
-    //           sumForce += update(posA, kindA, particleIndexB);
-    //         }
-    //       }
-    //     }
-    //   }
-
-    //   velocity[particleIndex] = (velocity[particleIndex] + sumForce) * 0.95;
-    //   positionWrite[particleIndex] = posA + velocity[particleIndex] * dt;
-    // }
-    //           `,
-    //         }),
-    //         entryPoint: "main",
-    //       },
-    //     });
-
     this.update = simpleWebGPU.device.createComputePipeline({
       layout: simpleWebGPU.device.createPipelineLayout({
         bindGroupLayouts: [groupLayout.update, groupLayout.params],
@@ -412,27 +337,24 @@ struct Offset {
 const dt = 1.0 / 60.0;
 const bounce = 5.0;
 
-fn posToHash(pos: vec2<f32>) -> u32 {
-  let normalizedPos = vec2<u32>(pos / params.chunkSize);
-  return (normalizedPos.x * 61u + normalizedPos.y * 97u) % params.chunkCount;
-}
+${posToHash}
 
 fn f(r: f32, a: f32) -> f32 {
-  // if (r < params.minRadiusRate) {
-  //   return (r / params.minRadiusRate - 1) * bounce;
-  // } else if (1.0 < r) {
-  //   return a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate));
-  // } else {
-  //   return 0.0;
-  // }
-  return select(
-    select(0.0,
-      a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate)),
-      params.minRadiusRate < r && r < 1.0
-    ),
-    (r / params.minRadiusRate - 1) * bounce,
-    r < params.minRadiusRate
-  );
+  if (1.0 < r) { // 遠すぎ
+    return 0.0;
+  } else if (r < params.minRadiusRate) { // 近すぎる時の跳ね返し
+    return (r / params.minRadiusRate - 1.0) * bounce;
+  } else { // 通常
+    return a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate));
+  }
+  // return select(
+  //   select(0.0, // 遠すぎ
+  //     a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate)), // 通常
+  //     params.minRadiusRate < r && r < 1.0
+  //   ),
+  //   (r / params.minRadiusRate - 1) * bounce, // 近すぎる時の跳ね返し
+  //   r < params.minRadiusRate
+  // );
 }
 
 fn update(posA: vec2<f32>, kindA: u32, particleIndexB: u32) -> vec2<f32> {
@@ -454,7 +376,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
     return ;
   }
   var sumForce = vec2<f32>(0.0);
-  let chunkRange = ceil(params.maxRadius / params.chunkSize);
+  let chunkRange = ceil(params.maxRadius / params.chunkSize) + 1.0; // 不正確な計算に対応するために計算チャンクの範囲を1つ広げる
 
   let posA = positionRead[particleIndex];
   let kindA = kind[particleIndex];
@@ -476,6 +398,11 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
   }
   velocity[particleIndex] += sumForce;
   velocity[particleIndex] *= 0.95;
+  // 一フレームでチャンクを跨ぐようなことを無くそうかとも思った
+  // const speed = length(params.chunkSize);
+  // if (params.chunkSize < speed * dt) {
+  //   velocity[particleIndex] = min(params.chunkSize, length(velocity[particleIndex]));
+  // }
   positionWrite[particleIndex] = posA + velocity[particleIndex] * dt;
 }
           `,
@@ -499,10 +426,7 @@ ${paramsStruct}
 @group(0) @binding(2) var<storage, read> positionRead: array<vec2<f32>>;
 @group(1) @binding(0) var<uniform> params: Params;
 
-fn posToHash(pos: vec2<f32>) -> u32 {
-  let normalizedPos = vec2<u32>(pos / params.chunkSize);
-  return (normalizedPos.x * 61u + normalizedPos.y * 97u) % params.chunkCount;
-}
+${posToHash}
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {

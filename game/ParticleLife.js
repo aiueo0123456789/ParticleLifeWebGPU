@@ -98,8 +98,8 @@ export class ParticleLife {
           this.dynamicSetting.particles,
           this.staticSetting.maxKinds,
           this.staticSetting.maxChunks,
-          this.dynamicSetting.maxRadius * 2, // チャンクサイズ
-          // 50, // チャンクサイズ
+          // this.dynamicSetting.maxRadius * 2, // チャンクサイズ
+          50, // チャンクサイズ
           this.dynamicSetting.maxRadius,
           this.dynamicSetting.minRadiusRate,
         ],
@@ -116,128 +116,144 @@ export class ParticleLife {
       ]),
     );
 
-    const encoder = simpleWebGPU.device.createCommandEncoder();
-    encoder.clearBuffer(
-      this.gpu.buffer.chunkOffset,
-      0,
-      this.gpu.buffer.chunkOffset.size,
-    );
+    const doCalculation = this.dynamicSetting.correctSimulation || isPing;
+    // const doCalculation = this.dynamicSetting.correctSimulation || this.counter % 10 == 0;
 
+    const encoder = simpleWebGPU.device.createCommandEncoder();
+    if (doCalculation) {
+      encoder.clearBuffer(
+        this.gpu.buffer.chunkOffset,
+        0,
+        this.gpu.buffer.chunkOffset.size,
+      );
+    }
     const computePass = encoder.beginComputePass();
     computePass.setBindGroup(1, this.gpu.group.params);
+    if (doCalculation) {
 
-    computePass.setPipeline(this.gpu.pipeline.chunk);
-    // 読み取りからチャンクを計算するためpingとpongを逆にする
-    computePass.setBindGroup(
-      0,
-      isPing ? this.gpu.group.chunkPong : this.gpu.group.chunkPing,
-    );
-    computePass.dispatchWorkgroups(
-      Math.ceil(this.dynamicSetting.particles / 64),
-    );
-
-    const calPrefixSum = () => {
-      // 累積和
-      computePass.setPipeline(this.gpu.pipeline.radixSort_Scan);
-
-      const isPingInScanOffset = prefixSumLoopNum & 1;
-      /**
-       * offsetがない（桁数が偶数）場合はpong->pingの順番
-       * offsetがある（桁数が奇数）場合はping->pong->pingの順番
-       */
+      computePass.setPipeline(this.gpu.pipeline.chunk);
+      // 読み取りからチャンクを計算するためpingとpongを逆にする
       computePass.setBindGroup(
         0,
-        isPingInScanOffset === 1
-          ? this.gpu.group.scanFirstPing
-          : this.gpu.group.scanFirstPong,
-        [0],
+        isPing ? this.gpu.group.chunkPong : this.gpu.group.chunkPing,
       );
       computePass.dispatchWorkgroups(
         Math.ceil(this.dynamicSetting.particles / 64),
       );
-      for (let stepIndex = 1; stepIndex < prefixSumLoopNum; stepIndex++) {
-        const isPingInScan = ((stepIndex + isPingInScanOffset) & 1) === 1;
+
+      const calPrefixSum = () => {
+        // 累積和
+        computePass.setPipeline(this.gpu.pipeline.radixSort_Scan);
+
+        const isPingInScanOffset = prefixSumLoopNum & 1;
+        /**
+         * offsetがない（桁数が偶数）場合はpong->pingの順番
+         * offsetがある（桁数が奇数）場合はping->pong->pingの順番
+         */
         computePass.setBindGroup(
           0,
-          isPingInScan
-            ? this.gpu.group.radixSort_Scan_PongToPing
-            : this.gpu.group.radixSort_Scan_PingToPong,
-          [stepIndex * stride],
+          isPingInScanOffset === 1
+            ? this.gpu.group.scanFirstPing
+            : this.gpu.group.scanFirstPong,
+          [0],
+        );
+        computePass.dispatchWorkgroups(
+          Math.ceil(this.dynamicSetting.particles / 64),
+        );
+        for (let stepIndex = 1; stepIndex < prefixSumLoopNum; stepIndex++) {
+          const isPingInScan = ((stepIndex + isPingInScanOffset) & 1) === 1;
+          computePass.setBindGroup(
+            0,
+            isPingInScan
+              ? this.gpu.group.radixSort_Scan_PongToPing
+              : this.gpu.group.radixSort_Scan_PingToPong,
+            [stepIndex * stride],
+          );
+          computePass.dispatchWorkgroups(
+            Math.ceil(this.dynamicSetting.particles / 64),
+          );
+        }
+      };
+
+      const isPingInRadixSortOffset =
+        this.staticSetting.radixSortMaxBitIndex & 1;
+      if (true) {
+        const isPingInRadixSort = (isPingInRadixSortOffset & 1) === 1;
+
+        // ビットの反転
+        computePass.setPipeline(this.gpu.pipeline.radixSort_InvertBit);
+        computePass.setBindGroup(
+          0,
+          this.gpu.group.radixSort_FirstInvertBit,
+          [0],
+        );
+        computePass.dispatchWorkgroups(
+          Math.ceil(this.dynamicSetting.particles / 64),
+        );
+
+        calPrefixSum();
+
+        // ソート
+        computePass.setPipeline(this.gpu.pipeline.radixSort_Sort);
+        computePass.setBindGroup(
+          0,
+          isPingInRadixSort
+            ? this.gpu.group.radixSort_Sort_FirstToPing
+            : this.gpu.group.radixSort_Sort_FirstToPong,
+          [0],
         );
         computePass.dispatchWorkgroups(
           Math.ceil(this.dynamicSetting.particles / 64),
         );
       }
-    };
+      for (
+        let bitIndex = 1;
+        bitIndex < this.staticSetting.radixSortMaxBitIndex;
+        bitIndex++
+      ) {
+        const isPingInRadixSort =
+          ((bitIndex + isPingInRadixSortOffset) & 1) === 1;
 
-    const isPingInRadixSortOffset = this.staticSetting.radixSortMaxBitIndex & 1;
-    if (true) {
-      const isPingInRadixSort = (isPingInRadixSortOffset & 1) === 1;
+        // ビットの反転
+        computePass.setPipeline(this.gpu.pipeline.radixSort_InvertBit);
+        computePass.setBindGroup(
+          0,
+          isPingInRadixSort
+            ? this.gpu.group.radixSort_InvertBit_PongToPing
+            : this.gpu.group.radixSort_InvertBit_PingToPong,
+          [bitIndex * stride],
+        );
+        computePass.dispatchWorkgroups(
+          Math.ceil(this.dynamicSetting.particles / 64),
+        );
 
-      // ビットの反転
-      computePass.setPipeline(this.gpu.pipeline.radixSort_InvertBit);
-      computePass.setBindGroup(0, this.gpu.group.radixSort_FirstInvertBit, [0]);
+        calPrefixSum();
+
+        // ソート
+        computePass.setPipeline(this.gpu.pipeline.radixSort_Sort);
+        computePass.setBindGroup(
+          0,
+          isPingInRadixSort
+            ? this.gpu.group.radixSort_Sort_PongToPing
+            : this.gpu.group.radixSort_Sort_PingToPong,
+          [bitIndex * stride],
+        );
+        computePass.dispatchWorkgroups(
+          Math.ceil(this.dynamicSetting.particles / 64),
+        );
+      }
+      computePass.setPipeline(this.gpu.pipeline.radixSort_MakeOffset);
+      computePass.setBindGroup(0, this.gpu.group.radixSort_MakeOffset);
       computePass.dispatchWorkgroups(
         Math.ceil(this.dynamicSetting.particles / 64),
       );
-
-      calPrefixSum();
-
-      // ソート
-      computePass.setPipeline(this.gpu.pipeline.radixSort_Sort);
       computePass.setBindGroup(
         0,
-        isPingInRadixSort
-          ? this.gpu.group.radixSort_Sort_FirstToPing
-          : this.gpu.group.radixSort_Sort_FirstToPong,
-        [0],
-      );
-      computePass.dispatchWorkgroups(
-        Math.ceil(this.dynamicSetting.particles / 64),
+        isPing
+          ? this.gpu.group.updatePongToPing
+          : this.gpu.group.updatePingToPong,
       );
     }
-    for (
-      let bitIndex = 1;
-      bitIndex < this.staticSetting.radixSortMaxBitIndex;
-      bitIndex++
-    ) {
-      const isPingInRadixSort =
-        ((bitIndex + isPingInRadixSortOffset) & 1) === 1;
-
-      // ビットの反転
-      computePass.setPipeline(this.gpu.pipeline.radixSort_InvertBit);
-      computePass.setBindGroup(
-        0,
-        isPingInRadixSort
-          ? this.gpu.group.radixSort_InvertBit_PongToPing
-          : this.gpu.group.radixSort_InvertBit_PingToPong,
-        [bitIndex * stride],
-      );
-      computePass.dispatchWorkgroups(
-        Math.ceil(this.dynamicSetting.particles / 64),
-      );
-
-      calPrefixSum();
-
-      // ソート
-      computePass.setPipeline(this.gpu.pipeline.radixSort_Sort);
-      computePass.setBindGroup(
-        0,
-        isPingInRadixSort
-          ? this.gpu.group.radixSort_Sort_PongToPing
-          : this.gpu.group.radixSort_Sort_PingToPong,
-        [bitIndex * stride],
-      );
-      computePass.dispatchWorkgroups(
-        Math.ceil(this.dynamicSetting.particles / 64),
-      );
-    }
-    computePass.setPipeline(this.gpu.pipeline.radixSort_MakeOffset);
-    computePass.setBindGroup(0, this.gpu.group.radixSort_MakeOffset);
-    computePass.dispatchWorkgroups(
-      Math.ceil(this.dynamicSetting.particles / 64),
-    );
-
     computePass.setPipeline(this.gpu.pipeline.update);
     computePass.setBindGroup(
       0,

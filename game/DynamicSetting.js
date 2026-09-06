@@ -7,5 +7,7 @@ export class DynamicSetting {
 
     this.maxRadius = 100;
     this.minRadiusRate = 0.3;
+
+    this.correctSimulation = false;
   }
 }

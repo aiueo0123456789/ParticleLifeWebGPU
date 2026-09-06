@@ -69,7 +69,13 @@ document.addEventListener("mousemove", (e) => {
   }
 });
 
-const sliders = ["count", "kinds", "radius", "minRadiusRate"];
+const sliders = [
+  "count",
+  "kinds",
+  "radius",
+  "minRadiusRate",
+  "correctSimulation",
+];
 const structs = {
   count: {
     text: "パーティクル数",
@@ -99,12 +105,18 @@ const structs = {
     value: game.dynamicSetting.minRadiusRate,
     step: 0.001,
   },
+  correctSimulation: {
+    text: "正しい計算",
+    type: "checkbox",
+    value: game.dynamicSetting.correctSimulation,
+  },
 };
 const fmts = {
   count: (v) => Math.round(v),
   kinds: (v) => Math.round(v),
   radius: (v) => Math.round(v),
   minRadiusRate: (v) => v,
+  correctSimulation: (v) => v,
 };
 
 const inputs = {
@@ -119,9 +131,11 @@ const inputs = {
     game.dynamicSetting.maxRadius = Number(v);
   },
   minRadiusRate: (v) => {
-    console.log();
     game.dynamicSetting.minRadiusRate = Number(v);
   },
+  correctSimulation: (v) => {
+    game.dynamicSetting.correctSimulation = v;
+  }
 };
 
 function setPct(el) {
@@ -150,19 +164,28 @@ sliders.forEach((k) => {
   const span = document.createElement("span");
   lh.append(label, span);
   const input = document.createElement("input");
-  input.type = "range";
-  input.min = structs[k].min;
-  input.max = structs[k].max;
-  input.step = structs[k].step;
-  input.value = structs[k].value;
+  if (structs[k].type === "checkbox") {
+    input.type = "checkbox";
+    input.checked = structs[k].value;
+  } else {
+    input.type = "range";
+    input.min = structs[k].min;
+    input.max = structs[k].max;
+    input.step = structs[k].step;
+    input.value = structs[k].value;
+  }
   row.append(lh, input);
 
   setting.append(row);
 
   const upd = () => {
-    span.textContent = fmts[k](input.value);
-    setPct(input);
-    inputs[k](input.value);
+    if (input.type === "checkbox") {
+      inputs[k](input.checked);
+    } else {
+      span.textContent = fmts[k](input.value);
+      setPct(input);
+      inputs[k](input.value);
+    }
   };
   input.addEventListener("input", upd);
   upd();
