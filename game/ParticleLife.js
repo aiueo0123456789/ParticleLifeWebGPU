@@ -17,6 +17,7 @@ export class ParticleLife {
   }
 
   init() {
+    this.counter = 0;
     simpleWebGPU.writeBuffer(
       this.gpu.buffer.particleKind,
       new Uint32Array(
