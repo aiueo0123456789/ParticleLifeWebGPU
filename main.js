@@ -48,10 +48,13 @@ function update() {
 }
 
 const camera = game.camera;
+const cameraZooMax = 100;
+const cameraZooMin = 0.1;
 
 document.addEventListener("wheel", (e) => {
   camera.zoom += e.deltaY / 200;
-  camera.zoom = Math.max(Math.min(camera.zoom, 100), 0.1);
+  camera.zoom = Math.max(Math.min(camera.zoom, cameraZooMax), cameraZooMin);
+  cameraZoomUpd();
 });
 
 let isMouseDown = false;
@@ -261,6 +264,36 @@ document.getElementById("btn-restart").addEventListener("click", () => {
   game.init();
 });
 
+const cameraSettingTag = document.getElementById("camera-setting");
+const cameraZoomRow = document.createElement("div");
+cameraZoomRow.classList.add("row");
+const cameraZoomLh = document.createElement("div");
+cameraZoomLh.classList.add("lh");
+const cameraZoomLabel = document.createElement("label");
+cameraZoomLabel.textContent = "ズーム";
+const cameraZoomSpan = document.createElement("span");
+cameraZoomLh.append(cameraZoomLabel, cameraZoomSpan);
+const cameraZoomInput = document.createElement("input");
+cameraZoomInput.type = "range";
+cameraZoomInput.min = cameraZooMin;
+cameraZoomInput.max = cameraZooMax;
+cameraZoomInput.step = 0.01;
+cameraZoomInput.value = camera.zoom;
+
+cameraZoomRow.append(cameraZoomLh, cameraZoomInput);
+
+cameraSettingTag.append(cameraZoomRow);
+
+const cameraZoomUpd = () => {
+  setPct(cameraZoomInput);
+  cameraZoomSpan.textContent = Math.round(camera.zoom * 100) / 100;
+};
+cameraZoomInput.addEventListener("input", () => {
+  camera.zoom = Number(cameraZoomInput.value);
+  cameraZoomUpd();
+});
+cameraZoomUpd();
+
 panel.addEventListener("mousemove", (e) => {
   e.stopPropagation();
 });
@@ -268,6 +301,9 @@ panel.addEventListener("mousedown", (e) => {
   e.stopPropagation();
 });
 panel.addEventListener("mouseup", (e) => {
+  e.stopPropagation();
+});
+panel.addEventListener("wheel", (e) => {
   e.stopPropagation();
 });
 
