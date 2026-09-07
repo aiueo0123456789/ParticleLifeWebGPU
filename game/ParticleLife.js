@@ -93,6 +93,10 @@ export class ParticleLife {
     );
     const isPing = (this.counter & 1) === 0; // レンダリングにpingを使うか
 
+    const chunkSize = Math.ceil(
+      (this.staticSetting.spawnRadius * 2) /
+        Math.sqrt(this.staticSetting.maxChunks),
+    );
     simpleWebGPU.writeBuffer(
       this.gpu.buffer.params,
       simpleWebGPU.createBitData(
@@ -101,7 +105,8 @@ export class ParticleLife {
           this.staticSetting.maxKinds,
           this.staticSetting.maxChunks,
           // this.dynamicSetting.maxRadius * 2, // チャンクサイズ
-          50, // チャンクサイズ
+          // 50, // チャンクサイズ
+          chunkSize, // チャンクサイズ
           this.dynamicSetting.maxRadius,
           this.dynamicSetting.minRadiusRate,
         ],
