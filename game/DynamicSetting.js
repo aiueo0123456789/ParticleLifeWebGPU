@@ -7,11 +7,16 @@ export class DynamicSetting {
 
     this.maxRadius = 100;
     this.minRadiusRate = 0.3;
+    this.minValue = -20;
+    this.maxValue = 20;
 
     this.bounce = 70;
+
+    this.spawnRadius = 5000;
 
     this.correctSimulation = false;
 
     this.isPlay = true;
+
   }
 }

@@ -31,8 +31,8 @@ export class ParticleLife {
         Array.from(
           { length: this.staticSetting.maxParticles * 2 },
           () =>
-            Math.random() * this.staticSetting.spawnRadius * 2 -
-            this.staticSetting.spawnRadius,
+            Math.random() * this.dynamicSetting.spawnRadius * 2 -
+            this.dynamicSetting.spawnRadius,
         ),
       ),
     );
@@ -53,7 +53,7 @@ export class ParticleLife {
       new Float32Array(
         Array.from({
           length: this.staticSetting.maxKinds * this.staticSetting.maxKinds,
-        }).map(() => (Math.random() * 2 - 1) * 20),
+        }).map(() => Math.random()),
       ),
     );
   }
@@ -70,7 +70,7 @@ export class ParticleLife {
       new Float32Array(
         Array.from({
           length: this.staticSetting.maxKinds * this.staticSetting.maxKinds,
-        }).map(() => (Math.random() * 2 - 1) * 20),
+        }).map(() => Math.random()),
       ),
     );
   }
@@ -94,7 +94,7 @@ export class ParticleLife {
     const isPing = (this.counter & 1) === 0; // レンダリングにpingを使うか
 
     const chunkSize = Math.ceil(
-      (this.staticSetting.spawnRadius * 2) /
+      (this.dynamicSetting.spawnRadius * 2) /
         Math.sqrt(this.staticSetting.maxChunks),
     );
     simpleWebGPU.writeBuffer(
@@ -104,15 +104,16 @@ export class ParticleLife {
           this.dynamicSetting.particles,
           this.staticSetting.maxKinds,
           this.staticSetting.maxChunks,
-          // this.dynamicSetting.maxRadius * 2, // チャンクサイズ
           // 50, // チャンクサイズ
           chunkSize, // チャンクサイズ
+          this.dynamicSetting.minValue,
+          this.dynamicSetting.maxValue,
           this.dynamicSetting.maxRadius,
           this.dynamicSetting.minRadiusRate,
           this.dynamicSetting.bounce,
-          this.dynamicSetting.correctSimulation ? 1 : 0
+          this.dynamicSetting.correctSimulation ? 1 : 0,
         ],
-        ["u32", "u32", "u32", "f32", "f32", "f32", "f32", "u32"],
+        ["u32", "u32", "u32", "f32", "f32", "f32", "f32", "f32", "f32", "u32"],
       ),
     );
 

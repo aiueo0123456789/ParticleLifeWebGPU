@@ -107,6 +107,8 @@ struct Params {
   maxKindsCount: u32,
   chunkCount: u32,
   chunkSize: f32,
+  minValue: f32,
+  maxValue: f32,
   maxRadius: f32,
   minRadiusRate: f32,
   bounce: f32,
@@ -342,13 +344,15 @@ const dt = 1.0 / 60.0;
 
 ${posToHash}
 
-fn f(r: f32, a: f32) -> f32 {
+fn f(r: f32, normalizedValue: f32) -> f32 {
   if (1.0 < r) { // 遠すぎ
     return 0.0;
   } else if (r < params.minRadiusRate) { // 近すぎる時の跳ね返し
     return (r / params.minRadiusRate - 1.0) * params.bounce;
   } else { // 通常
-    return a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate));
+    let range = params.maxValue - params.minValue;
+    let value = (normalizedValue * range) + params.minValue;
+    return value * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate));
   }
   // return select(
   //   select(0.0, // 遠すぎ
@@ -400,7 +404,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
     }
   }
   velocity[particleIndex] += sumForce;
-  velocity[particleIndex] *= 0.95;
+  velocity[particleIndex] *= 0.97;
   // 一フレームでチャンクを跨ぐようなことを無くそうかとも思った
   // const speed = length(params.chunkSize);
   // if (params.chunkSize < speed * dt) {

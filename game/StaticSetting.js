@@ -4,6 +4,5 @@ export class StaticSetting {
     this.maxKinds = 10;
     this.radixSortMaxBitIndex = 16;
     this.maxChunks = 2 ** this.radixSortMaxBitIndex;
-    this.spawnRadius = 2500;
   }
 }

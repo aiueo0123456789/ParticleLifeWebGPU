@@ -69,8 +69,11 @@ document.addEventListener("mousemove", (e) => {
 });
 
 const sliders = [
+  "spawnRadius",
   "count",
   "kinds",
+  "minValue",
+  "maxValue",
   "radius",
   "minRadiusRate",
   "bounce",
@@ -78,6 +81,13 @@ const sliders = [
   "isPlay",
 ];
 const structs = {
+  spawnRadius: {
+    text: "スポーン半径",
+    min: 2500,
+    max: 5000,
+    value: game.dynamicSetting.spawnRadius,
+    step: 1,
+  },
   count: {
     text: "パーティクル数",
     min: 10 ** 3,
@@ -91,6 +101,20 @@ const structs = {
     max: game.staticSetting.maxKinds,
     value: game.dynamicSetting.kinds,
     step: 1,
+  },
+  minValue: {
+    text: "最小値",
+    min: -100,
+    max: 100,
+    value: game.dynamicSetting.minValue,
+    step: 0.1,
+  },
+  maxValue: {
+    text: "最大値",
+    min: -100,
+    max: 100,
+    value: game.dynamicSetting.maxValue,
+    step: 0.1,
   },
   radius: {
     text: "最大作用半径",
@@ -125,8 +149,11 @@ const structs = {
   },
 };
 const fmts = {
+  spawnRadius: (v) => Math.round(v),
   count: (v) => Math.round(v),
   kinds: (v) => Math.round(v),
+  minValue: (v) => v,
+  maxValue: (v) => v,
   radius: (v) => Math.round(v),
   minRadiusRate: (v) => v,
   bounce: (v) => v,
@@ -135,12 +162,21 @@ const fmts = {
 };
 
 const inputs = {
+  spawnRadius: (v) => {
+    game.dynamicSetting.spawnRadius = Number(v);
+  },
   count: (v) => {
     game.dynamicSetting.particles = Number(v);
   },
   kinds: (v) => {
     game.dynamicSetting.kinds = Number(v);
     game.resetKind();
+  },
+  minValue: (v) => {
+    game.dynamicSetting.minValue = Number(v);
+  },
+  maxValue: (v) => {
+    game.dynamicSetting.maxValue = Number(v);
   },
   radius: (v) => {
     game.dynamicSetting.maxRadius = Number(v);
@@ -220,6 +256,9 @@ tab.addEventListener("click", () => {
 
 document.getElementById("btn-matrix").addEventListener("click", () => {
   game.resetRurle();
+});
+document.getElementById("btn-restart").addEventListener("click", () => {
+  game.init();
 });
 
 panel.addEventListener("mousemove", (e) => {
