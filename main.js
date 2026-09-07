@@ -75,6 +75,7 @@ const sliders = [
   "radius",
   "minRadiusRate",
   "correctSimulation",
+  "isPlay",
 ];
 const structs = {
   count: {
@@ -110,6 +111,11 @@ const structs = {
     type: "checkbox",
     value: game.dynamicSetting.correctSimulation,
   },
+  isPlay: {
+    text: "再生",
+    type: "checkbox",
+    value: game.dynamicSetting.isPlay,
+  },
 };
 const fmts = {
   count: (v) => Math.round(v),
@@ -117,6 +123,7 @@ const fmts = {
   radius: (v) => Math.round(v),
   minRadiusRate: (v) => v,
   correctSimulation: (v) => v,
+  isPlay: (v) => v,
 };
 
 const inputs = {
@@ -135,7 +142,10 @@ const inputs = {
   },
   correctSimulation: (v) => {
     game.dynamicSetting.correctSimulation = v;
-  }
+  },
+  isPlay: (v) => {
+    game.dynamicSetting.isPlay = v;
+  },
 };
 
 function setPct(el) {

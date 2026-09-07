@@ -9,5 +9,7 @@ export class DynamicSetting {
     this.minRadiusRate = 0.3;
 
     this.correctSimulation = false;
+
+    this.isPlay = true;
   }
 }
