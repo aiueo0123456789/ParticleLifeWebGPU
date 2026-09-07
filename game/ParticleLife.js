@@ -25,13 +25,14 @@ export class ParticleLife {
         ),
       ),
     );
-    const radius = 2500;
     simpleWebGPU.writeBuffer(
       this.gpu.buffer.particlePositionPong,
       new Float32Array(
         Array.from(
           { length: this.staticSetting.maxParticles * 2 },
-          () => Math.random() * radius * 2 - radius,
+          () =>
+            Math.random() * this.staticSetting.spawnRadius * 2 -
+            this.staticSetting.spawnRadius,
         ),
       ),
     );

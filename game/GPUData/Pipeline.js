@@ -335,7 +335,8 @@ struct Offset {
 @group(1) @binding(0) var<uniform> params: Params;
 
 const dt = 1.0 / 60.0;
-const bounce = 5.0;
+// const bounce = 100.0;
+const bounce = 50.0;
 
 ${posToHash}
 
@@ -360,7 +361,7 @@ fn f(r: f32, a: f32) -> f32 {
 fn update(posA: vec2<f32>, kindA: u32, particleIndexB: u32) -> vec2<f32> {
   let sub = positionRead[particleIndexB] - posA;
   if (abs(sub.x) < params.maxRadius && abs(sub.y) < params.maxRadius) {
-    let dist = max(length(sub), 0.0001);
+    let dist = max(length(sub), 0.000001);
     let dir = sub / dist;
     return dir * f(dist / params.maxRadius, rule[kindA * params.maxKindsCount + kind[particleIndexB]]) * dt;
   } else {
