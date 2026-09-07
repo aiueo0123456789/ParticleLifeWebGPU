@@ -109,6 +109,8 @@ struct Params {
   chunkSize: f32,
   maxRadius: f32,
   minRadiusRate: f32,
+  bounce: f32,
+  correctSimulation: u32,
 };
     `;
 
@@ -335,8 +337,8 @@ struct Offset {
 @group(1) @binding(0) var<uniform> params: Params;
 
 const dt = 1.0 / 60.0;
-// const bounce = 100.0;
-const bounce = 50.0;
+// const bounce = 70.0;
+// const bounce = 50.0;
 
 ${posToHash}
 
@@ -344,7 +346,7 @@ fn f(r: f32, a: f32) -> f32 {
   if (1.0 < r) { // 遠すぎ
     return 0.0;
   } else if (r < params.minRadiusRate) { // 近すぎる時の跳ね返し
-    return (r / params.minRadiusRate - 1.0) * bounce;
+    return (r / params.minRadiusRate - 1.0) * params.bounce;
   } else { // 通常
     return a * (1.0 - abs(2.0 * r - 1.0 - params.minRadiusRate) / (1.0 - params.minRadiusRate));
   }
@@ -377,7 +379,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
     return ;
   }
   var sumForce = vec2<f32>(0.0);
-  let chunkRange = ceil(params.maxRadius / params.chunkSize) + 1.0; // 不正確な計算に対応するために計算チャンクの範囲を1つ広げる
+  let chunkRange = ceil(params.maxRadius / params.chunkSize) + select(1.0, 0.0, params.correctSimulation == 1u); // 不正確な計算に対応するために計算チャンクの範囲を1つ広げる
 
   let posA = positionRead[particleIndex];
   let kindA = kind[particleIndex];

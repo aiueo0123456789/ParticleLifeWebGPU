@@ -8,6 +8,8 @@ export class DynamicSetting {
     this.maxRadius = 100;
     this.minRadiusRate = 0.3;
 
+    this.bounce = 70;
+
     this.correctSimulation = false;
 
     this.isPlay = true;

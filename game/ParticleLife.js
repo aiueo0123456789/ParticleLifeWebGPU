@@ -109,8 +109,10 @@ export class ParticleLife {
           chunkSize, // チャンクサイズ
           this.dynamicSetting.maxRadius,
           this.dynamicSetting.minRadiusRate,
+          this.dynamicSetting.bounce,
+          this.dynamicSetting.correctSimulation ? 1 : 0
         ],
-        ["u32", "u32", "u32", "f32", "f32", "f32"],
+        ["u32", "u32", "u32", "f32", "f32", "f32", "f32", "u32"],
       ),
     );
 

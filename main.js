@@ -73,6 +73,7 @@ const sliders = [
   "kinds",
   "radius",
   "minRadiusRate",
+  "bounce",
   "correctSimulation",
   "isPlay",
 ];
@@ -105,6 +106,13 @@ const structs = {
     value: game.dynamicSetting.minRadiusRate,
     step: 0.001,
   },
+  bounce: {
+    text: "反発力",
+    min: 0,
+    max: 100,
+    value: game.dynamicSetting.bounce,
+    step: 0.001,
+  },
   correctSimulation: {
     text: "正しい計算",
     type: "checkbox",
@@ -121,6 +129,7 @@ const fmts = {
   kinds: (v) => Math.round(v),
   radius: (v) => Math.round(v),
   minRadiusRate: (v) => v,
+  bounce: (v) => v,
   correctSimulation: (v) => v,
   isPlay: (v) => v,
 };
@@ -138,6 +147,9 @@ const inputs = {
   },
   minRadiusRate: (v) => {
     game.dynamicSetting.minRadiusRate = Number(v);
+  },
+  bounce: (v) => {
+    game.dynamicSetting.bounce = Number(v);
   },
   correctSimulation: (v) => {
     game.dynamicSetting.correctSimulation = v;
