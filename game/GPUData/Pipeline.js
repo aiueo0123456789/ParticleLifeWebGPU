@@ -31,8 +31,8 @@ struct VOutput {
 
 const pointData = array<vec2<f32>, 3>(
   vec2<f32>( 3.0,-1.0),
-  vec2<f32>(-1.0, 3.0),
-  vec2<f32>(-1.0,-1.0),
+  vec2<f32>(0.0, 1.5),
+  vec2<f32>(-3.0,-1.0),
 );
 
 const particleSize = 4.0;

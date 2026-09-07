@@ -1,6 +1,5 @@
 import { ParticleLife } from "./game/ParticleLife.js";
 import { simpleWebGPU } from "./simpleWebGPU.js";
-import { generateDistinctColors } from "./util.js";
 
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("renderTarget");
@@ -51,7 +50,7 @@ function update() {
 const camera = game.camera;
 
 document.addEventListener("wheel", (e) => {
-  camera.zoom += e.deltaY / 100;
+  camera.zoom += e.deltaY / 200;
   camera.zoom = Math.max(Math.min(camera.zoom, 100), 0.1);
 });
 

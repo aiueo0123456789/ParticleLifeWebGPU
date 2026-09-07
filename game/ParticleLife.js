@@ -25,12 +25,13 @@ export class ParticleLife {
         ),
       ),
     );
+    const radius = 2500;
     simpleWebGPU.writeBuffer(
       this.gpu.buffer.particlePositionPong,
       new Float32Array(
         Array.from(
           { length: this.staticSetting.maxParticles * 2 },
-          () => Math.random() * 10000,
+          () => Math.random() * radius * 2 - radius,
         ),
       ),
     );
@@ -265,6 +266,8 @@ export class ParticleLife {
         Math.ceil(this.dynamicSetting.particles / 64),
       );
       computePass.end();
+
+      this.counter++;
     }
 
     const renderTarget = canvasContext.getCurrentTexture();
@@ -289,7 +292,5 @@ export class ParticleLife {
 
     RenderPassEncoder.end();
     simpleWebGPU.device.queue.submit([encoder.finish()]);
-
-    this.counter++;
   }
 }
