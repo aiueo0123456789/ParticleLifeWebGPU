@@ -263,7 +263,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
     offsets[key].start = i;
   }
   if (i == params.particleCount - 1 || sortedKeys[i + 1u] != key) {
-    offsets[key].end = i;
+    offsets[key].end = i + 1;
   }
 }
           `,
